@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Controle de Ensaios 2025</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      padding: 30px;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .data-atual {
+      text-align: center;
+      font-size: 1.2em;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .inputs {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    input[type="time"] {
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .historico {
+      margin-top: 30px;
+    }
+
+    .item {
+      background: #e8f0fe;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .limpar {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .limpar button {
+      background-color: #dc3545;
+    }
+
+    .limpar button:hover {
+      background-color: #a71d2a;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Controle de Ensaios 2025</h1>
+    <div class="data-atual" id="dataAtual">📅 Carregando data e hora...</div>
+
+    <div class="inputs">
+      <input type="time" id="entrada" />
+      <input type="time" id="saida" />
+      <button onclick="registrarEnsaio()">Registrar</button>
+    </div>
+
+    <div class="historico" id="historico"></div>
+
+    <div class="limpar">
+      <button onclick="limparHistorico()">🗑️ Apagar Histórico</button>
+    </div>
+  </div>
+
+  <script>
+    function atualizarDataAtual() {
+      const agora = new Date();
+      const dataFormatada = agora.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+      const hora = agora.toLocaleTimeString('pt-BR');
+      document.getElementById('dataAtual').textContent = `📅 ${dataFormatada} - ⏰ ${hora}`;
+    }
+
+    setInterval(atualizarDataAtual, 1000);
+    atualizarDataAtual();
+
+    let historico = JSON.parse(localStorage.getItem("ensaios2025")) || [];
+
+    function registrarEnsaio() {
+      const entrada = document.getElementById("entrada").value;
+      const saida = document.getElementById("saida").value;
+
+      if (!entrada || !saida) {
+        alert("Preencha os dois horários!");
+        return;
+      }
+
+      const [h1, m1] = entrada.split(":").map(Number);
+      const [h2, m2] = saida.split(":").map(Number);
+      const minutosEntrada = h1 * 60 + m1;
+      const minutosSaida = h2 * 60 + m2;
+      const duracao = minutosSaida - minutosEntrada;
+
+      if (duracao <= 0) {
+        alert("Horários inválidos!");
+        return;
+      }
+
+      const agora = new Date();
+      const data = agora.toLocaleDateString("pt-BR");
+      const horas = Math.floor(duracao / 60);
+      const minutos = duracao % 60;
+
+      const ensaio = {
+        data,
+        entrada,
+        saida,
+        duracao: `${horas}h ${minutos}min`
+      };
+
+      historico.push(ensaio);
+      localStorage.setItem("ensaios2025", JSON.stringify(historico));
+      mostrarHistorico();
+
+      document.getElementById("entrada").value = "";
+      document.getElementById("saida").value = "";
+    }
+
+    function mostrarHistorico() {
+      const div = document.getElementById("historico");
+      div.innerHTML = "<h3>📘 Histórico de Ensaios</h3>";
+
+      if (historico.length === 0) {
+        div.innerHTML += "<p>Nenhum ensaio registrado ainda.</p>";
+        return;
+      }
+
+      historico.slice().reverse().forEach(item => {
+        div.innerHTML += `
+          <div class="item">
+            <strong>🗓️ ${item.data}</strong><br>
+            ⏰ Das ${item.entrada} às ${item.saida}<br>
+            ⏳ Duração: ${item.duracao}
+          </div>
+        `;
+      });
+    }
+
+    function limparHistorico() {
+      if (confirm("Tem certeza que deseja apagar TODO o histórico?")) {
+        localStorage.removeItem("ensaios2025");
+        historico = [];
+        mostrarHistorico();
+      }
+    }
+
+    mostrarHistorico();
+  </script>
+
+</body>
+</html>
